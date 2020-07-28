@@ -1,0 +1,99 @@
+<template>
+  <div>
+    <section class="hero is-primary">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title is-size-2">
+            生徒画面トップ
+          </h1>
+          <h2 class="subtitle is-size-4">
+            RoomIDとNameを入力してください
+          </h2>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+
+        <div class="columns">
+          <div class="column is-4 is-offset-4">
+
+            <div class="card">
+              <div class="card-content">
+                <validation-observer ref="observer" v-slot="{ invalid }" tag="div">
+                  <div class="field">
+                    <validation-provider name="roomId" rules="required" v-slot="{ errors }">
+                      <label class="label">RoomID</label>
+                      <div class="control">
+                        <input class="input" type="text" v-model="roomId">
+                        <p class="help is-danger">{{ errors[0] }}</p>
+                      </div>
+                    </validation-provider>
+                  </div>
+                  <div class="field">
+                    <validation-provider name="name" rules="required" v-slot="{ errors }">
+                      <label class="label">Name</label>
+                      <div class="control">
+                        <input class="input" type="text" v-model="name">
+                        <p class="help is-danger">{{ errors[0] }}</p>
+                      </div>
+                    </validation-provider>
+                  </div>
+
+                  <div class="field">
+                    <div class="control">
+                      <button class="button is-fullwidth is-primary" @click="joinRoom">参加</button>
+                    </div>
+                  </div>
+                </validation-observer>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</template>
+
+<script>
+import { getCredentials, listObjects, putObject } from '~/plugins/aws';
+
+export default {
+  data () {
+    return { 
+      roomId: '',
+      name: '',
+    };
+  },
+  methods: {
+    async joinRoom() {
+      const isValid = await this.$refs.observer.validate();
+      if (!isValid) { return }
+      try {
+        await getCredentials();
+        const roomResult = await listObjects({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Prefix: `${this.roomId}/`
+        });
+        if (roomResult.KeyCount === 0) {
+          return this.$refs.observer.setErrors({roomId: ['このRoomIDは存在しません']});
+        }
+        const nameResult = await listObjects({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Prefix: `${this.roomId}/${this.name}`
+        });
+        if (nameResult.KeyCount > 0) {
+          return this.$refs.observer.setErrors({name: ['このNameはすでに使用されています']});
+        }
+      } catch (err) {
+        console.error(err);
+      };
+      this.$router.push({ path: `/student/room/${this.roomId}?name=${this.name}` });
+    }
+  }
+
+}
+</script>

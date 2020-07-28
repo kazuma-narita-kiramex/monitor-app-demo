@@ -1,0 +1,23 @@
+{
+  "name": "demo-app",
+  "version": "1.0.0",
+  "description": "My superb Nuxt.js project",
+  "author": "kazuma-narita",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.3.6",
+    "@nuxtjs/bulma": "^1.2.1",
+    "@nuxtjs/dotenv": "^1.4.0",
+    "@nuxtjs/font-awesome": "^1.0.4",
+    "aws-sdk": "^2.717.0",
+    "nuxt": "^2.0.0",
+    "vee-validate": "^3.3.7"
+  },
+  "devDependencies": {}
+}
