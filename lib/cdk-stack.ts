@@ -16,7 +16,12 @@ export class CdkStack extends cdk.Stack {
       publicSubnetIds: this.node.tryGetContext('publicSubnetIds'),
     });
 
-    // ECRレポジトリ作成a
+    // 既存のTGをインポート
+    const targetGroup = elbv2.ApplicationTargetGroup.fromTargetGroupAttributes(this, 'TG', {
+      targetGroupArn: this.node.tryGetContext('targetGroupArn')
+    });
+
+    // ECRレポジトリ作成
     const repository = new ecr.Repository(this, 'Repository', {
       repositoryName: 'narita-monitor-app-demo',
       lifecycleRules: [
@@ -28,21 +33,13 @@ export class CdkStack extends cdk.Stack {
     // imageTagが与えられた場合のみ、ECSサービスをデプロイする
     if (this.node.tryGetContext('imageTag')) {
 
-    // // LB
-    // const lb = new elbv2.ApplicationLoadBalancer(this, 'LB', { vpc, internetFacing: true });
-    // const listener = lb.addListener('Listener', { port: 80 });
-
     // Fargate ServiceにアタッチするSG
     const sg = new ec2.SecurityGroup(this, 'SG', {
       vpc
     });
+    sg.addIngressRule(ec2.Peer.ipv4('0.0.0.0/0'), ec2.Port.tcp(80));
 
-    // // LBのSGから80番を許可
-    // const LBSg = ec2.SecurityGroup.fromSecurityGroupId(this, 'LBSG', this.node.tryGetContext('LBSecurityGroupId'));
-    // sg.addIngressRule(LBSg, ec2.Port.tcp(80));
-
-
-      const cluster = new ecs.Cluster(this, 'Cluster', {
+    const cluster = new ecs.Cluster(this, 'Cluster', {
         vpc,
       });
 
@@ -72,10 +69,7 @@ export class CdkStack extends cdk.Stack {
         securityGroup: sg,
       });
 
-      listener.addTargets('APPTarget', {
-        port: 80,
-        targets: [service]
-      });
+      service.attachToApplicationTargetGroup(targetGroup);
     }
 
   }

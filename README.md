@@ -1,14 +1,20 @@
-# Welcome to your CDK TypeScript project!
+# nuxt-app
 
-This is a blank project for TypeScript development with CDK.
+`.env`をいい感じにしておく
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+```
+cd nuxt-app
+yarn install
+yarn dev
+```
 
-## Useful commands
+# deploy
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+ECRへログインしておく
+cdk.jsonのcontextを設定しておく
+
+```
+sh scripts/docker_build.sh
+ECR_REPO=XXXXXXX sh scripts/docker_push.sh
+npx cdk deploy --profile dev -c imageTag=yyyyyyy
+```
