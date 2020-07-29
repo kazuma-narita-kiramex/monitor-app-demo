@@ -14,10 +14,20 @@
     </section>
 
     <section class="section">
-      <div class="container">
-        <div>
-          <video autoplay playsinline ref="video" id="video" width="640" height="400"></video>
-          <canvas ref="canvas" id="canvas" width="640" height="400"></canvas>
+      <div class="container center-block">
+        <div class="card capture-card-area">
+          <header class="card-header">
+            <p class="card-header-title">
+              画面共有中
+            </p>
+          </header>
+          <div class="card-content capture-content-area">
+            <div class="content capture-area">
+              <!-- とりあえず480p -->
+              <video autoplay playsinline ref="video" id="video" :width="x" height="480" class="video-area"></video>
+              <canvas ref="canvas" id="canvas" :width="x" height="480"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -28,9 +38,6 @@
 <script>
 /*
 TODO
-- videoとcanvasのサイズを動的に変更する
-- canvasは非表示
-- 画像サイズ小さくても良いかも
 - /studentへ遷移しても画面選択が出ているのをなんとかしたい
 - 停止、退出
 */
@@ -42,8 +49,8 @@ export default {
     return { 
       roomId: '',
       name: '',
-      x: 640,
-      y: 400,
+      x: 854,
+      y: 480,
       video: null,
       canvas: null,
       timerObj: null,
@@ -97,8 +104,11 @@ export default {
   mounted: async function() {
     const sw = window.parent.screen.width;
     const sh = window.parent.screen.height;
-    this.x = Math.floor( this.y * sw / sh );
-    //$('#video').css( { width: x } );
+    if ( sh/sw >= 9/16) {
+      this.x = Math.floor( this.y * sw / sh );
+    } else {
+      this.y = Math.floor( this.x * sh / sw );
+    }
 
     this.video = this.$refs.video
     navigator.mediaDevices.getDisplayMedia({video: true, audio: false})
@@ -115,3 +125,26 @@ export default {
   },
 }
 </script>
+
+<style>
+  .video-area {
+    display: none;
+  }
+
+  .capture-area {
+    display:inline-block;
+  }
+
+  .capture-content-area {
+    display:inline-block;
+  }
+
+  .capture-card-area {
+    display:inline-block;
+  }
+  .center-block {
+    text-align: center;
+    margin: 0 auto;
+  }
+
+</style>

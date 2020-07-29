@@ -31,7 +31,7 @@
                   </div>
                   </validation-provider>
                 </div>
-                
+
                 <div class="field">
                   <div class="control">
                     <button class="button is-fullwidth is-primary" @click="createRoom">参加</button>
@@ -57,6 +57,7 @@ export default {
   data () {
     return { 
       roomId: '',
+      test: '',
     };
   },
   methods: {

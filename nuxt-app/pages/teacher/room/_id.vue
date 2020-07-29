@@ -14,18 +14,23 @@
     </section>
 
     <section class="section">
-      <div class="container">
+      <div class="container center-block">
 
-        <!--
-        <div v-for="url of urls">
-          <img :src="url">
-        </div>
-        
-        <div v-for="src of srcs">
-          <img :src="src">
-        </div>
-        -->
-        <img :src="imageSrc">
+        <template v-for="name in students">
+          <div class="card capture-card-area">
+            <header class="card-header">
+              <p class="card-header-title">
+                {{ name }}
+              </p>
+            </header>
+            <div class="card-content capture-content-area">
+              <div class="content capture-area">
+                <img :src="captures[name]" width="854" height="480">
+              </div>
+            </div>
+          </div>
+        </template>
+
       </div>
     </section>
 
@@ -33,6 +38,11 @@
 </template>
 
 <script>
+/*
+TODO
+- 退出した生徒のキャプチ枠がのこりつずける
+*/
+
 import { getCredentials, listObjects, getObject, getSignedUrl } from '~/plugins/aws';
 
 export default {
@@ -40,15 +50,14 @@ export default {
     return { 
       roomId: '',
       timerObj: null,
-      urls: [],
-      srcs: [],
-      imageSrc: '',
+      captures: {},
+      students: [],
     };
   },
   methods: {
     async draw () {
-      this.urls = [];
-      this.srcs = [];
+      const now = Date.now();
+      //const currentStudents = [];
       const roomResult = await listObjects({
         Bucket: process.env.AWS_S3_BUCKET,
         Prefix: `${this.roomId}/`
@@ -56,22 +65,30 @@ export default {
       const objects = roomResult.Contents.filter(content => {
           return content.Key !== `${this.roomId}/`;
       });
+
       objects.forEach(async obj => {
-        // const url = await getSignedUrl({
-        //   Bucket: process.env.AWS_S3_BUCKET,
-        //   Key: obj.Key,
-        // });
-        // this.urls.push(url);
-        // this.imageSrc =  url;
+        const nameReg = new RegExp(`${this.roomId}/(.*)`);
+        const name = obj.Key.match(nameReg)[1];
+
+        // 1分以上更新がなければ表示しない
+        if ( ((now - obj.LastModified) / 1000) > 60 ) {
+          this.$delete(this.captures, name);
+          return;
+        }
 
         const result = await getObject({
           Bucket: process.env.AWS_S3_BUCKET,
           Key: obj.Key,
         });
-        this.srcs.push(`data:image/png;base64,${this.encode(result.Body)}`);
-        this.imageSrc = `data:image/png;base64,${this.encode(result.Body)}`;
 
+        if ( !(this.students.find(value => value === name )) ) {
+          this.students.push(name);
+        }
+
+        this.$set(this.captures, name, `data:image/png;base64,${this.encode(result.Body)}`);
+        //currentStudents.push(name);
       });
+
     },
     encode (data) {
       const str = data.reduce((a,b) => { return a+String.fromCharCode(b) }, '');
@@ -95,7 +112,27 @@ export default {
   mounted: async function() {
     this.timerObj = setInterval(async () => {
       await this.draw();
-    }, 3000);
+    }, 1000);
   },
 }
 </script>
+
+<style>
+  .capture-area {
+    display:inline-block;
+  }
+
+  .capture-content-area {
+    display:inline-block;
+  }
+
+  .capture-card-area {
+    display:inline-block;
+    margin: 10px;
+  }
+  .center-block {
+    text-align: center;
+    margin: 0 auto;
+  }
+
+</style>
