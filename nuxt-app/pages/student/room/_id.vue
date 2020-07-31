@@ -42,7 +42,7 @@ TODO
 - 停止、退出
 */
 
-import { getCredentials, listObjects, putObject, getItem } from '~/plugins/aws';
+import { getCredentials, putObject, getItem } from '~/plugins/aws';
 
 export default {
   data () {
@@ -104,14 +104,6 @@ export default {
       if ( data.Item && data.Item.identityId ){
         this.teacherIdentityId = data.Item.identityId
       } else {
-        return this.$router.push({ path: `/student/` });
-      }
-      // S3のフォルダが存在しない場合はリダイレクト
-      const roomResult = await listObjects({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Prefix: `${this.teacherIdentityId}/${this.roomId}`
-      });
-      if (roomResult.KeyCount === 0) {
         return this.$router.push({ path: `/student/` });
       }
     } catch (err) {

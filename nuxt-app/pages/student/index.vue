@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { getCredentials, listObjects, putObject, getItem } from '~/plugins/aws';
+import { getCredentials, getItem } from '~/plugins/aws';
 
 export default {
   data () {

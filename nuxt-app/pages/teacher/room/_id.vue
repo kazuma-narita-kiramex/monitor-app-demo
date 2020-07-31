@@ -43,7 +43,7 @@ TODO
 - 退出した生徒のキャプチ枠がのこりつずける
 */
 
-import { getCredentials, listObjects, getObject, getSignedUrl } from '~/plugins/aws';
+import { getCredentials, listObjects, getObject } from '~/plugins/aws';
 
 export default {
   data () {

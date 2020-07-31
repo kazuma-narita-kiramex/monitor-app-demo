@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import { getCredentials, listObjects, putObject, getItem, putItem } from '~/plugins/aws';
+import { getCredentials, putObject, getItem, putItem } from '~/plugins/aws';
 
 export default {
   data () {
