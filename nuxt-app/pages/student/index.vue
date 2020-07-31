@@ -59,7 +59,7 @@
 </template>
 
 <script>
-import { getCredentials, listObjects, putObject } from '~/plugins/aws';
+import { getCredentials, listObjects, putObject, getItem } from '~/plugins/aws';
 
 export default {
   data () {
@@ -74,19 +74,13 @@ export default {
       if (!isValid) { return }
       try {
         await getCredentials();
-        const roomResult = await listObjects({
-          Bucket: process.env.AWS_S3_BUCKET,
-          Prefix: `${this.roomId}/`
+        // roomIdが存在するか確認
+        const data = await getItem({
+          TableName: process.env.AWS_DYNAMODB_TABLE,
+          Key: { 'roomId': this.roomId }
         });
-        if (roomResult.KeyCount === 0) {
+        if ( !data.Item ){
           return this.$refs.observer.setErrors({roomId: ['このRoomIDは存在しません']});
-        }
-        const nameResult = await listObjects({
-          Bucket: process.env.AWS_S3_BUCKET,
-          Prefix: `${this.roomId}/${this.name}`
-        });
-        if (nameResult.KeyCount > 0) {
-          return this.$refs.observer.setErrors({name: ['このNameはすでに使用されています']});
         }
       } catch (err) {
         console.error(err);

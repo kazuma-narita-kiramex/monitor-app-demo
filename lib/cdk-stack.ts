@@ -4,6 +4,7 @@ import * as ecr from '@aws-cdk/aws-ecr';
 import * as ecs from '@aws-cdk/aws-ecs';
 import * as log from '@aws-cdk/aws-logs';
 import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
 
 export class CdkStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -27,6 +28,10 @@ export class CdkStack extends cdk.Stack {
       lifecycleRules: [
         { maxImageCount: 10 }
       ]
+    });
+
+    const table = new dynamodb.Table(this, 'Table', {
+      partitionKey: { name: 'roomId', type: dynamodb.AttributeType.STRING },
     });
 
     // ECS Fargate

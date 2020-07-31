@@ -42,11 +42,13 @@ TODO
 - 停止、退出
 */
 
-import { getCredentials, listObjects, putObject } from '~/plugins/aws';
+import { getCredentials, listObjects, putObject, getItem } from '~/plugins/aws';
 
 export default {
   data () {
-    return { 
+    return {
+      identityId: '',
+      teacherIdentityId: '',
       roomId: '',
       name: '',
       x: 854,
@@ -73,40 +75,59 @@ export default {
       });
       await putObject({
         Bucket: process.env.AWS_S3_BUCKET,
-        Key: `${this.roomId}/${this.name}`,
+        Key: `${this.teacherIdentityId}/${this.roomId}/${this.identityId}/${this.name}`,
         Body: blob,
         ContentType: 'image/png'
       });
     }
   },
   created: async function () {
-    this.roomId = this.$route.params.id
-    this.name = this.$route.query.name
-    if (!this.roomId || !this.name) {
-      return this.$router.push({ path: `/student/` });
-    }
-    await getCredentials();
-    const roomResult = await listObjects({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Prefix: `${this.roomId}/`
-    });
-    if (roomResult.KeyCount === 0) {
-      return this.$router.push({ path: `/student/` });
-    }
-    const nameResult = await listObjects({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Prefix: `${this.roomId}/${this.name}`
-    });
-    if (nameResult.KeyCount > 0) {
+    try {
+      // パラメータが不足している場合はリダイレクト
+      this.roomId = this.$route.params.id
+      this.name = this.$route.query.name
+      if (!this.roomId || !this.name) {
+        return this.$router.push({ path: `/student/` });
+      }
+      const cred = await getCredentials();
+      // identityIdが無い場合はリダイレクト
+      if ( cred.identityId ) {
+        this.identityId = cred.identityId;
+      } else {
+        return this.$router.push({ path: `/student/` });
+      }
+      // 存在しないroomIdの場合はリダイレクト
+      const data = await getItem({
+        TableName: process.env.AWS_DYNAMODB_TABLE,
+        Key: { 'roomId': this.roomId }
+      });
+      if ( data.Item && data.Item.identityId ){
+        this.teacherIdentityId = data.Item.identityId
+      } else {
+        return this.$router.push({ path: `/student/` });
+      }
+      // S3のフォルダが存在しない場合はリダイレクト
+      const roomResult = await listObjects({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Prefix: `${this.teacherIdentityId}/${this.roomId}`
+      });
+      if (roomResult.KeyCount === 0) {
+        return this.$router.push({ path: `/student/` });
+      }
+    } catch (err) {
+      console.error(err);
       return this.$router.push({ path: `/student/` });
     }
   },
   mounted: async function() {
+    // 画面サイズ取得
     const sw = window.parent.screen.width;
     const sh = window.parent.screen.height;
     if ( sh/sw >= 9/16) {
+      // 横長の場合、横幅100%に縦を合わせる
       this.x = Math.floor( this.y * sw / sh );
     } else {
+      // 縦長の場合、縦100%に横幅を合わせる
       this.y = Math.floor( this.x * sh / sw );
     }
 

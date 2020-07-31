@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import { getCredentials, listObjects, putObject } from '~/plugins/aws';
+import { getCredentials, listObjects, putObject, getItem, putItem } from '~/plugins/aws';
 
 export default {
   data () {
@@ -65,17 +65,30 @@ export default {
       const isValid = await this.$refs.observer.validate();
       if (!isValid) { return }
       try {
-        await getCredentials();
-        const result = await listObjects({
-          Bucket: process.env.AWS_S3_BUCKET,
-          Prefix: `${this.roomId}/`
+        const cred = await getCredentials();
+        // roomIdが他のteacherに使用されていないか確認
+        // dynamodbで roomId => identityId のマッピングを持っている
+        const data = await getItem({
+          TableName: process.env.AWS_DYNAMODB_TABLE,
+          Key: { 'roomId': this.roomId }
         });
-        if (result.KeyCount > 0) {
+        if ( data.Item && data.Item.identityId !== cred.identityId ) {
+          // すでに他のユーザに作成済みのroomId
           return this.$refs.observer.setErrors({roomId: ['このRoomIDはすでに使用されています']});
+        } else {
+          // 新規roomId
+          await putItem({
+            TableName: process.env.AWS_DYNAMODB_TABLE,
+            Item: {
+              'roomId': this.roomId,
+              'identityId': cred.identityId
+            }
+          });
         }
+        // S3にフォルダを作成しておく
         await putObject({
           Bucket: process.env.AWS_S3_BUCKET,
-          Key: `${this.roomId}/`,
+          Key: `${cred.identityId}/${this.roomId}/`,
           Body: ``,
         });
       } catch (err) {

@@ -3,10 +3,11 @@ import AWS from 'aws-sdk';
 AWS.config.region = process.env.AWS_REGION;
 
 export const getCredentials = async () => {
-  AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+  return AWS.config.credentials = new AWS.CognitoIdentityCredentials({
     IdentityPoolId: process.env.AWS_COGNITO_IDENTITY_POOL_ID
   });
-  return AWS.config.credentials.getPromise();
+  //console.log(AWS.config.credentials.identityId);
+  //return AWS.config.credentials.getPromise();
 };
 
 export const listObjects = async (params) => {
@@ -29,3 +30,12 @@ export const getSignedUrl = async (params) => {
   return s3.getSignedUrlPromise('getObject', params);
 };
 
+export const getItem = async (params) => {
+  const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});;
+  return dynamodb.get(params).promise();
+};
+
+export const putItem = async (params) => {
+  const dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});;
+  return dynamodb.put(params).promise();
+};

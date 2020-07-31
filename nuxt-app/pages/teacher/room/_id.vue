@@ -48,6 +48,7 @@ import { getCredentials, listObjects, getObject, getSignedUrl } from '~/plugins/
 export default {
   data () {
     return { 
+      identityId: '',
       roomId: '',
       timerObj: null,
       captures: {},
@@ -57,17 +58,16 @@ export default {
   methods: {
     async draw () {
       const now = Date.now();
-      //const currentStudents = [];
       const roomResult = await listObjects({
         Bucket: process.env.AWS_S3_BUCKET,
-        Prefix: `${this.roomId}/`
+        Prefix: `${this.identityId}/${this.roomId}/`
       });
       const objects = roomResult.Contents.filter(content => {
-          return content.Key !== `${this.roomId}/`;
+          return content.Key !== `${this.identityId}/${this.roomId}/`;
       });
 
       objects.forEach(async obj => {
-        const nameReg = new RegExp(`${this.roomId}/(.*)`);
+        const nameReg = new RegExp(`${this.identityId}/${this.roomId}/[a-zA-Z0-9:\-]+/(.*)`);
         const name = obj.Key.match(nameReg)[1];
 
         // 1分以上更新がなければ表示しない
@@ -81,12 +81,12 @@ export default {
           Key: obj.Key,
         });
 
+        // 新しい生徒が参加した場合
         if ( !(this.students.find(value => value === name )) ) {
           this.students.push(name);
         }
 
         this.$set(this.captures, name, `data:image/png;base64,${this.encode(result.Body)}`);
-        //currentStudents.push(name);
       });
 
     },
@@ -96,16 +96,29 @@ export default {
     }
   },
   created: async function () {
-    this.roomId = this.$route.params.id
-    if (!this.roomId) {
-      return this.$router.push({ path: `/teacher/` });
-    }
-    await getCredentials();
-    const roomResult = await listObjects({
-      Bucket: process.env.AWS_S3_BUCKET,
-      Prefix: `${this.roomId}/`
-    });
-    if (roomResult.KeyCount === 0) {
+    try {
+      // パラメータが不足している場合はリダイレクト
+      this.roomId = this.$route.params.id
+      if (!this.roomId) {
+        return this.$router.push({ path: `/teacher/` });
+      }
+      const cred = await getCredentials();
+      // identityIdが無い場合はリダイレクト
+      if ( cred.identityId ) {
+        this.identityId = cred.identityId;
+      } else {
+        return this.$router.push({ path: `/teacher/` });
+      }
+      // S3のフォルダが存在しない場合はリダイレクト
+      const roomResult = await listObjects({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Prefix: `${this.identityId}/${this.roomId}/`
+      });
+      if (roomResult.KeyCount === 0) {
+        return this.$router.push({ path: `/teacher/` });
+      }
+    } catch (err) {
+      console.error(err);
       return this.$router.push({ path: `/teacher/` });
     }
   },
